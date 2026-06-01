@@ -19,7 +19,7 @@ An 8-week summer learning platform for teenagers to learn 3D printing and Tinker
 2. SQL Editor → run `supabase/migrations/001_initial_schema.sql`
 3. Authentication → Providers → enable Email + Google
 4. Storage → create buckets: `homework-uploads` (private) and `project-photos` (public)
-5. Settings → API → copy Project URL and anon key
+5. Settings → API → copy Project URL and Publishable key
 
 ### Step 2: Deploy to Vercel
 1. Push this repo to GitHub
