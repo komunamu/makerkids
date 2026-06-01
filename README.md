@@ -26,14 +26,14 @@ An 8-week summer learning platform for teenagers to learn 3D printing and Tinker
 2. vercel.com → New Project → import repo
 3. Add environment variables:
    - NEXT_PUBLIC_SUPABASE_URL
-   - NEXT_PUBLIC_SUPABASE_ANON_KEY
+   - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 4. Deploy
 5. Add your Vercel URL to Supabase → Auth → URL Configuration
 
 ### Step 3: Run locally
 ```bash
 cp .env.local.example .env.local
-# Fill in Supabase URL and anon key
+# Fill in Supabase URL and publishable key
 npm install
 npm run dev
 ```
