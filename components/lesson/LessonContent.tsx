@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import QuizComponent from './QuizComponent'
 
 interface LessonContentProps {
@@ -82,7 +83,7 @@ export default function LessonContent({ lesson, userId, initialStatus }: LessonC
       {/* Lesson content */}
       {lesson.content_markdown && (
         <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6 prose prose-sm max-w-none prose-headings:text-gray-900 prose-a:text-blue-600">
-          <ReactMarkdown>{lesson.content_markdown}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.content_markdown}</ReactMarkdown>
         </div>
       )}
 
