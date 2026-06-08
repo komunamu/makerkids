@@ -35,7 +35,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
         estimated_minutes: seedLesson.estimated_minutes,
         videos: seedLesson.videos,
         week: { week_number: weekIdx + 1, title: seedWeek.title },
-        quizzes: null,
+        quizzes: seedLesson.quiz ?? null,
       }
     }
   }
