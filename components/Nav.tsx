@@ -61,8 +61,8 @@ export default function Nav({ userName, userRole }: NavProps) {
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
               )}
             >
-              <span className="sm:hidden">👨‍👩‍👧</span>
-              <span className="hidden sm:inline">Parent View</span>
+              <span className="sm:hidden">{userRole === 'admin' ? '⚙️' : '👨‍👩‍👧'}</span>
+              <span className="hidden sm:inline">{userRole === 'admin' ? 'Admin' : 'Parent View'}</span>
             </Link>
           ) : null}
         </div>

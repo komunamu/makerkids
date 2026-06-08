@@ -36,8 +36,21 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const { data: projects } = await supabase
     .from('projects').select('*').eq('user_id', id).order('submitted_at', { ascending: false })
 
+  const { data: quizAttempts } = await supabase
+    .from('quiz_attempts').select('quiz_id, score, passed, created_at')
+    .eq('user_id', id).order('created_at', { ascending: false })
+
+  // Most recent attempt per quiz
+  const quizMap = new Map<string, any>()
+  for (const a of quizAttempts ?? []) {
+    if (!quizMap.has(a.quiz_id)) quizMap.set(a.quiz_id, a)
+  }
+
   const completedLessons = progress?.length ?? 0
   const weeksCompleted = Math.floor(completedLessons / 3)
+  const avgQuizScore = quizAttempts?.length
+    ? Math.round(quizAttempts.reduce((s, a) => s + a.score, 0) / quizAttempts.length)
+    : null
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -61,9 +74,10 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               Joined {new Date(student.created_at).toLocaleDateString()}
             </p>
           </div>
-          <div className="ml-auto grid grid-cols-3 gap-3 text-center">
+          <div className="ml-auto grid grid-cols-4 gap-3 text-center">
             {[
               { label: 'Lessons', value: completedLessons },
+              { label: 'Avg Quiz', value: avgQuizScore !== null ? `${avgQuizScore}%` : '—' },
               { label: 'Badges', value: achievements?.length ?? 0 },
               { label: 'Projects', value: projects?.length ?? 0 },
             ].map(s => (
@@ -130,6 +144,28 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Quiz scores */}
+            <div>
+              <h2 className="text-sm font-semibold text-gray-700 mb-3">Quiz Scores</h2>
+              {quizMap.size > 0 ? (
+                <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50">
+                  {Array.from(quizMap.values()).map((a: any) => {
+                    const label = a.quiz_id.replace('seed-quiz-', 'Week ').replace('-', ' · Lesson ')
+                    return (
+                      <div key={a.quiz_id} className="flex items-center justify-between px-4 py-2.5">
+                        <span className="text-xs text-gray-600 capitalize">{label}</span>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${a.passed ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                          {a.score}% {a.passed ? '✓' : '✗'}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl border border-gray-100 p-4 text-xs text-gray-400 text-center">No quiz attempts yet</div>
+              )}
             </div>
 
             {/* Achievements */}
