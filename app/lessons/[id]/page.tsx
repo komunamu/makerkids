@@ -55,10 +55,43 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   const { data: progress } = await supabase
     .from('lesson_progress').select('status').eq('user_id', user.id).eq('lesson_id', id).single()
 
+  // Compute next lesson ID
+  let nextLessonId: string | null = null
+  if (id.startsWith('seed-')) {
+    const [, weekStr, indexStr] = id.split('-')
+    const weekIdx = parseInt(weekStr) - 1
+    const lessonIdx = parseInt(indexStr)
+    const weekData = CURRICULUM[weekIdx]
+    if (weekData?.lessons[lessonIdx + 1]) {
+      nextLessonId = `seed-${weekIdx + 1}-${lessonIdx + 1}`
+    } else if (CURRICULUM[weekIdx + 1]?.lessons?.length > 0) {
+      nextLessonId = `seed-${weekIdx + 2}-0`
+    }
+  } else if (lesson) {
+    const { data: nextInWeek } = await supabase
+      .from('lessons').select('id')
+      .eq('week_id', lesson.week_id)
+      .gt('order_index', lesson.order_index)
+      .order('order_index').limit(1).single()
+    if (nextInWeek) {
+      nextLessonId = nextInWeek.id
+    } else {
+      const { data: nextWeek } = await supabase
+        .from('weeks').select('id, lessons(id, order_index)')
+        .eq('week_number', (lesson.week?.week_number ?? 0) + 1)
+        .single()
+      const lessons: any[] = (nextWeek as any)?.lessons ?? []
+      if (lessons.length > 0) {
+        const sorted = [...lessons].sort((a: any, b: any) => a.order_index - b.order_index)
+        nextLessonId = sorted[0].id
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Nav userName={profile?.display_name} userRole={profile?.role} />
-      <LessonContent lesson={lessonData} userId={user.id} initialStatus={progress?.status ?? 'not_started'} />
+      <LessonContent lesson={lessonData} userId={user.id} initialStatus={progress?.status ?? 'not_started'} nextLessonId={nextLessonId} />
     </div>
   )
 }

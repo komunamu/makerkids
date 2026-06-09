@@ -10,9 +10,10 @@ interface LessonContentProps {
   lesson: any
   userId: string
   initialStatus: string
+  nextLessonId?: string | null
 }
 
-export default function LessonContent({ lesson, userId, initialStatus }: LessonContentProps) {
+export default function LessonContent({ lesson, userId, initialStatus, nextLessonId }: LessonContentProps) {
   const [status, setStatus] = useState(initialStatus)
   const [marking, setMarking] = useState(false)
   const supabase = createClient()
@@ -107,6 +108,18 @@ export default function LessonContent({ lesson, userId, initialStatus }: LessonC
           >
             {marking ? 'Saving…' : '✓ Mark complete'}
           </button>
+        </div>
+      )}
+
+      {/* Next lesson */}
+      {nextLessonId && (
+        <div className="mt-4 flex justify-end">
+          <Link
+            href={`/lessons/${nextLessonId}`}
+            className="bg-gray-900 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-700 transition"
+          >
+            Next lesson →
+          </Link>
         </div>
       )}
     </main>
