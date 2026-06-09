@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
@@ -26,7 +26,14 @@ export default function QuizComponent({ quiz, userId, initialAttempt }: QuizProp
   const [saving, setSaving] = useState(false)
   const supabase = createClient()
 
-  const questions = [...quiz.quiz_questions].sort((a, b) => a.order_index - b.order_index)
+  // Shuffle options once per quiz session so correct answer isn't always first
+  const questions = useMemo(() =>
+    [...quiz.quiz_questions]
+      .sort((a, b) => a.order_index - b.order_index)
+      .map(q => ({ ...q, quiz_options: [...q.quiz_options].sort(() => Math.random() - 0.5) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [quiz.id]
+  )
   const passed = submitted ? score >= quiz.passing_score : false
 
   function selectOption(questionId: string, optionId: string) {
