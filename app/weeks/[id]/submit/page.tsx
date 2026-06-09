@@ -35,28 +35,26 @@ export default function SubmitHomeworkPage({ params }: { params: Promise<{ id: s
       fileUrl = urlData.publicUrl
     }
 
-    // Get homework_id for this week
+    // Try to find the DB homework for this week
     const { data: homework } = await supabase
       .from('homework')
-      .select('id')
-      .limit(1)
-      .single()
-
-    if (!homework) {
-      // Submit without homework_id reference for now (seed data path)
-      setSuccess(true)
-      setLoading(false)
-      return
-    }
+      .select('id, week_id')
+      .eq('week_id', id) // fallback: just get any matching week
+      .maybeSingle()
 
     const { error: subError } = await supabase.from('submissions').insert({
-      homework_id: homework.id,
+      homework_id: homework?.id ?? null,
       user_id: user.id,
       content,
       file_url: fileUrl,
+      week_number: parseInt(id),
     })
 
     if (subError) { setError(subError.message); setLoading(false); return }
+
+    // Trigger achievements check
+    fetch('/api/achievements', { method: 'POST' }).catch(() => {})
+
     setSuccess(true)
     setLoading(false)
   }

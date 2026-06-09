@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
@@ -11,12 +12,14 @@ interface LessonContentProps {
   userId: string
   initialStatus: string
   nextLessonId?: string | null
+  quizAttempt?: { answers_json: Record<string, string>; score: number; passed: boolean } | null
 }
 
-export default function LessonContent({ lesson, userId, initialStatus, nextLessonId }: LessonContentProps) {
+export default function LessonContent({ lesson, userId, initialStatus, nextLessonId, quizAttempt }: LessonContentProps) {
   const [status, setStatus] = useState(initialStatus)
   const [marking, setMarking] = useState(false)
   const supabase = createClient()
+  const router = useRouter()
 
   async function markComplete() {
     setMarking(true)
@@ -26,7 +29,11 @@ export default function LessonContent({ lesson, userId, initialStatus, nextLesso
       status: 'complete',
       completed_at: new Date().toISOString(),
     }, { onConflict: 'user_id,lesson_id' })
-    if (!error) setStatus('complete')
+    if (!error) {
+      setStatus('complete')
+      fetch('/api/achievements', { method: 'POST' }).catch(() => {})
+      router.refresh()
+    }
     setMarking(false)
   }
 
@@ -91,7 +98,7 @@ export default function LessonContent({ lesson, userId, initialStatus, nextLesso
       {/* Quiz */}
       {lesson.quizzes && (
         <div className="mb-6">
-          <QuizComponent quiz={lesson.quizzes} userId={userId} />
+          <QuizComponent quiz={lesson.quizzes} userId={userId} initialAttempt={quizAttempt} />
         </div>
       )}
 

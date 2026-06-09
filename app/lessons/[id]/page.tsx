@@ -51,9 +51,16 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
     )
   }
 
-  // Get progress
-  const { data: progress } = await supabase
-    .from('lesson_progress').select('status').eq('user_id', user.id).eq('lesson_id', id).single()
+  // Get progress and quiz attempt in parallel
+  const quizId = lessonData?.quizzes?.id ?? null
+  const [{ data: progress }, { data: quizAttempt }] = await Promise.all([
+    supabase.from('lesson_progress').select('status').eq('user_id', user.id).eq('lesson_id', id).maybeSingle(),
+    quizId
+      ? supabase.from('quiz_attempts').select('answers_json, score, passed')
+          .eq('quiz_id', quizId).eq('user_id', user.id)
+          .order('attempted_at', { ascending: false }).limit(1).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ])
 
   // Compute next lesson ID
   let nextLessonId: string | null = null
@@ -91,7 +98,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   return (
     <div className="min-h-screen bg-gray-50">
       <Nav userName={profile?.display_name} userRole={profile?.role} />
-      <LessonContent lesson={lessonData} userId={user.id} initialStatus={progress?.status ?? 'not_started'} nextLessonId={nextLessonId} />
+      <LessonContent lesson={lessonData} userId={user.id} initialStatus={progress?.status ?? 'not_started'} nextLessonId={nextLessonId} quizAttempt={quizAttempt as any} />
     </div>
   )
 }

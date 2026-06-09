@@ -16,16 +16,18 @@ interface QuizProps {
     }>
   }
   userId: string
+  initialAttempt?: { answers_json: Record<string, string>; score: number; passed: boolean } | null
 }
 
-export default function QuizComponent({ quiz, userId }: QuizProps) {
-  const [answers, setAnswers] = useState<Record<string, string>>({})
-  const [submitted, setSubmitted] = useState(false)
-  const [score, setScore] = useState(0)
+export default function QuizComponent({ quiz, userId, initialAttempt }: QuizProps) {
+  const [answers, setAnswers] = useState<Record<string, string>>(initialAttempt?.answers_json ?? {})
+  const [submitted, setSubmitted] = useState(!!initialAttempt)
+  const [score, setScore] = useState(initialAttempt?.score ?? 0)
   const [saving, setSaving] = useState(false)
   const supabase = createClient()
 
   const questions = [...quiz.quiz_questions].sort((a, b) => a.order_index - b.order_index)
+  const passed = submitted ? score >= quiz.passing_score : false
 
   function selectOption(questionId: string, optionId: string) {
     if (submitted) return
@@ -55,8 +57,13 @@ export default function QuizComponent({ quiz, userId }: QuizProps) {
     setSaving(false)
   }
 
+  function handleRetry() {
+    setAnswers({})
+    setSubmitted(false)
+    setScore(0)
+  }
+
   const allAnswered = questions.length > 0 && questions.every(q => answers[q.id])
-  const passed = score >= quiz.passing_score
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-6">
@@ -64,7 +71,6 @@ export default function QuizComponent({ quiz, userId }: QuizProps) {
 
       {questions.map((q, qi) => {
         const selectedId = answers[q.id]
-        const correctOption = q.quiz_options.find(o => o.is_correct)
         return (
           <div key={q.id} className="mb-5">
             <p className="text-sm font-medium text-gray-800 mb-2">
@@ -122,8 +128,21 @@ export default function QuizComponent({ quiz, userId }: QuizProps) {
             {score}%
           </div>
           <div className={cn('text-sm', passed ? 'text-green-700' : 'text-amber-700')}>
-            {passed ? 'Great work! You passed.' : `You need ${quiz.passing_score}% to pass. Review the lesson and try again!`}
+            {passed
+              ? 'Great work! You passed.'
+              : `You need ${quiz.passing_score}% to pass. Review the lesson and try again!`}
           </div>
+          {!passed && (
+            <button
+              onClick={handleRetry}
+              className="mt-3 text-xs text-amber-700 underline hover:text-amber-900"
+            >
+              Try again
+            </button>
+          )}
+          {initialAttempt && !passed && (
+            <p className="text-xs text-gray-400 mt-1">Showing your previous attempt</p>
+          )}
         </div>
       )}
     </div>

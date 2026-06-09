@@ -2,16 +2,17 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
+import { CURRICULUM } from '@/lib/curriculum-data'
 
-const WEEKS = [
-  { n: 1, title: 'Welcome to 3D Printing', sub: 'Printer setup, safety, first print', emoji: '🖨️' },
-  { n: 2, title: 'TinkerCAD Basics', sub: 'Shapes, groups, holes, alignment', emoji: '📐' },
-  { n: 3, title: 'Measurements & Precision', sub: 'Real-world dimensions, ruler tool', emoji: '📏' },
-  { n: 4, title: 'Keychains & Custom Tags', sub: 'Design functional wearable objects', emoji: '🔑' },
-  { n: 5, title: 'STL Files & Cura Slicing', sub: 'Install Cura, learn key settings', emoji: '⚙️' },
-  { n: 6, title: 'Multi-Part Designs', sub: 'Tolerance, fit, assembly', emoji: '🔧' },
-  { n: 7, title: 'Product Design Challenge', sub: 'Empathize → prototype → test → iterate', emoji: '💡' },
-  { n: 8, title: 'Final Capstone Project', sub: 'Multi-part showcase project', emoji: '🏆' },
+const WEEK_META = [
+  { emoji: '🖨️' },
+  { emoji: '📐' },
+  { emoji: '📏' },
+  { emoji: '🔑' },
+  { emoji: '⚙️' },
+  { emoji: '🔧' },
+  { emoji: '💡' },
+  { emoji: '🏆' },
 ]
 
 export default async function WeeksPage() {
@@ -20,9 +21,22 @@ export default async function WeeksPage() {
   if (!user) redirect('/auth/login')
 
   const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).single()
-  const { data: progress } = await supabase
-    .from('lesson_progress').select('lesson_id').eq('user_id', user.id).eq('status', 'complete')
-  const completedCount = progress?.length ?? 0
+
+  const { data: progressRows } = await supabase
+    .from('lesson_progress')
+    .select('lesson_id')
+    .eq('user_id', user.id)
+    .eq('status', 'complete')
+
+  const completedIds = new Set(progressRows?.map(p => p.lesson_id) ?? [])
+
+  // Per-week completion derived from actual lesson IDs
+  const weekStatus = CURRICULUM.map((week, i) => {
+    const weekNum = i + 1
+    const seedIds = week.lessons.map((_, j) => `seed-${weekNum}-${j}`)
+    const done = seedIds.filter(id => completedIds.has(id)).length
+    return { done, total: seedIds.length, isComplete: done === seedIds.length }
+  })
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -32,10 +46,13 @@ export default async function WeeksPage() {
         <p className="text-gray-500 text-sm mb-6">8 weeks from first print to capstone project</p>
 
         <div className="space-y-3">
-          {WEEKS.map(w => {
-            const isComplete = completedCount >= w.n * 3
-            const isActive = !isComplete && completedCount >= (w.n - 1) * 3
-            const isLocked = !isComplete && !isActive
+          {CURRICULUM.map((week, i) => {
+            const w = { n: i + 1, title: week.title, emoji: WEEK_META[i].emoji }
+            const wStatus = weekStatus[i]
+            const prevComplete = i === 0 || weekStatus[i - 1].isComplete
+            const isComplete = wStatus.isComplete
+            const isActive = !isComplete && prevComplete
+            const isLocked = !isComplete && !prevComplete
 
             return (
               <Link
@@ -52,7 +69,9 @@ export default async function WeeksPage() {
                 </div>
                 <div className="flex-1">
                   <div className="font-semibold text-gray-800">Week {w.n}: {w.title}</div>
-                  <div className="text-xs text-gray-500 mt-0.5">{w.sub}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {wStatus.done} / {wStatus.total} lessons complete
+                  </div>
                 </div>
                 <div className={`text-xs px-3 py-1 rounded-full font-medium ${
                   isComplete ? 'bg-green-50 text-green-700' :
